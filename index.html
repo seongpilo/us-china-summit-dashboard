@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미·중 정상회담 분석 및 국내 증시 섹터별 영향 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals (stone-50, stone-100) for background, Slate for text, with Indigo/Emerald/Rose accents for data and sectors. -->
+    <!-- Application Structure Plan: A 3-tab dashboard structure (Overview, Sector Analysis, Stock Screener). This allows users to seamlessly navigate from macro-level geopolitical agendas down to actionable micro-level stock lists, providing a logical drill-down experience. -->
+    <!-- Visualization & Content Choices: Overview uses a Radar Chart to compare risk/opportunity across agendas. Sector Analysis uses a Bar Chart for projected revenue impacts. Stock Screener uses an interactive HTML table. Chart.js is used for canvas-based rendering to ensure high performance and responsiveness without relying on SVG or external libraries like Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #fafaf9;
+            color: #1e293b;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 450px;
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 50vh;
+                max-height: 500px;
+            }
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded bg-indigo-500 text-white flex items-center justify-center font-bold text-xl">
+                        &#128200;
+                    </div>
+                    <span class="font-bold text-lg tracking-wide">G2 서밋 인사이트 & 증시 영향</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <button onclick="switchTab('overview')" id="nav-overview" class="nav-btn bg-slate-800 text-white px-3 py-2 rounded-md text-sm font-medium transition">매크로 요약</button>
+                        <button onclick="switchTab('sectors')" id="nav-sectors" class="nav-btn text-slate-300 hover:bg-slate-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">섹터별 심층분석</button>
+                        <button onclick="switchTab('stocks')" id="nav-stocks" class="nav-btn text-slate-300 hover:bg-slate-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">관련주 대시보드</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="md:hidden flex justify-around bg-slate-800 p-2">
+            <button onclick="switchTab('overview')" id="nav-mobile-overview" class="nav-btn bg-slate-700 text-white px-3 py-1 rounded text-sm transition">요약</button>
+            <button onclick="switchTab('sectors')" id="nav-mobile-sectors" class="nav-btn text-slate-300 px-3 py-1 rounded text-sm transition">섹터</button>
+            <button onclick="switchTab('stocks')" id="nav-mobile-stocks" class="nav-btn text-slate-300 px-3 py-1 rounded text-sm transition">종목</button>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <section id="overview" class="tab-content active">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">미·중 정상회담 핵심 어젠다 및 매크로 환경</h1>
+                <p class="text-slate-600 text-lg">본 섹션은 G2 정상회담의 주요 논의 주제를 파악하고, 이것이 한국 거시경제 및 산업 전반에 미치는 기회와 위협 요인을 시각적으로 제공합니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow border-t-4 border-indigo-500">
+                    <h3 class="text-xl font-bold mb-4 text-slate-800">&#128187; 첨단 기술 패권 경쟁</h3>
+                    <ul class="space-y-2 text-slate-600">
+                        <li><span class="font-semibold text-slate-800">미국 입장:</span> AI, 반도체 대중 수출 통제 강화 및 동맹국 연대 압박</li>
+                        <li><span class="font-semibold text-slate-800">중국 입장:</span> 핵심 광물(갈륨, 게르마늄 등) 무기화 및 기술 자립 가속</li>
+                        <li class="mt-2 pt-2 border-t border-slate-100"><span class="font-bold text-indigo-600">국내 영향:</span> 메모리 반도체 반사이익 기대 vs 중국 내 팹(Fab) 운영 불확실성 상존</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow border-t-4 border-emerald-500">
+                    <h3 class="text-xl font-bold mb-4 text-slate-800">&#128267; 친환경 공급망 재편</h3>
+                    <ul class="space-y-2 text-slate-600">
+                        <li><span class="font-semibold text-slate-800">미국 입장:</span> IRA(인플레이션 감축법) 통한 탈중국 공급망 구축</li>
+                        <li><span class="font-semibold text-slate-800">중국 입장:</span> 배터리 소재/셀 시장 장악력 유지 및 우회 수출 시도</li>
+                        <li class="mt-2 pt-2 border-t border-slate-100"><span class="font-bold text-emerald-600">국내 영향:</span> K-배터리 3사 북미 점유율 확대 호재 vs 핵심 광물 다변화 과제 직면</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow border-t-4 border-rose-500">
+                    <h3 class="text-xl font-bold mb-4 text-slate-800">&#128737;&#65039; 지정학적 리스크</h3>
+                    <ul class="space-y-2 text-slate-600">
+                        <li><span class="font-semibold text-slate-800">미국 입장:</span> 대만 해협 안정 유지 및 인도-태평양 동맹 강화</li>
+                        <li><span class="font-semibold text-slate-800">중국 입장:</span> '하나의 중국' 원칙 강조 및 역내 군사적 영향력 확대</li>
+                        <li class="mt-2 pt-2 border-t border-slate-100"><span class="font-bold text-rose-600">국내 영향:</span> 방위산업 수출 모멘텀 지속, 글로벌 무기 교체 수요 증가 수혜</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="w-full flex flex-col items-center">
+                <h3 class="text-xl font-bold text-slate-800 mb-4 w-full text-center">주요 어젠다별 국내 산업 기회/위협 지수</h3>
+                <div class="chart-container">
+                    <canvas id="overviewRadarChart"></canvas>
+                </div>
+                <p class="text-sm text-slate-500 mt-4 text-center max-w-2xl">
+                    * 위 지표는 정상회담 결과 시나리오에 따른 섹터별 민감도를 나타냅니다. 바깥쪽으로 갈수록 한국 기업에 미치는 긍정적 기회 요인이 크며, 안쪽일수록 위협(리스크) 요인이 크게 작용함을 의미합니다.
+                </p>
+            </div>
+        </section>
+
+        <section id="sectors" class="tab-content">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">핵심 수혜 및 피해 섹터 심층 분석</h1>
+                <p class="text-slate-600 text-lg">이 섹션에서는 G2 정상회담 결과가 국내 주요 주식 섹터의 실적 및 밸류에이션에 미치는 영향을 데이터 기반으로 상세히 분석합니다. 하단의 섹터 버튼을 클릭하여 확인하세요.</p>
+            </div>
+
+            <div class="flex flex-wrap gap-3 mb-6 justify-center" id="sector-buttons">
+                <button onclick="loadSectorData('semi')" class="sector-btn px-6 py-3 rounded-full font-bold bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition" data-sector="semi">반도체 / AI</button>
+                <button onclick="loadSectorData('battery')" class="sector-btn px-6 py-3 rounded-full font-bold bg-white text-slate-600 border border-slate-300 hover:bg-slate-50 transition" data-sector="battery">2차전지 / EV</button>
+                <button onclick="loadSectorData('defense')" class="sector-btn px-6 py-3 rounded-full font-bold bg-white text-slate-600 border border-slate-300 hover:bg-slate-50 transition" data-sector="defense">방위산업</button>
+                <button onclick="loadSectorData('auto')" class="sector-btn px-6 py-3 rounded-full font-bold bg-white text-slate-600 border border-slate-300 hover:bg-slate-50 transition" data-sector="auto">자동차</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="chart-container w-full">
+                    <canvas id="sectorBarChart"></canvas>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-100 min-h-[400px] flex flex-col justify-center">
+                    <h2 id="detail-title" class="text-2xl font-bold text-slate-800 mb-4 border-b pb-2 border-slate-200">반도체 / AI 섹터 전망</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-bold text-indigo-600 uppercase text-sm tracking-wider">주요 모멘텀</h4>
+                            <p id="detail-momentum" class="text-slate-700 mt-1 leading-relaxed">미국의 대중국 AI 칩 수출 통제로 인해 중국 기업들의 레거시 메모리 사재기 수요 증가. 장기적으로는 HBM 등 고부가 가치 메모리 시장에서 한국 기업의 독점적 지위 강화 예상.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-rose-600 uppercase text-sm tracking-wider">리스크 요인</h4>
+                            <p id="detail-risk" class="text-slate-700 mt-1 leading-relaxed">미국 정부의 VEU(검증된 최종 사용자) 연장 여부에 따른 중국 내 공장(시안, 우시 등) 장비 반입 불확실성. 미중 디커플링 심화 시 글로벌 IT 수요 위축 가능성.</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg mt-4 border border-slate-100">
+                            <h4 class="font-bold text-slate-800 text-sm">투자 전략 제언</h4>
+                            <p id="detail-strategy" class="text-slate-600 mt-1 text-sm">중국 매출 비중이 높으나 대체 불가능한 HBM 밸류체인 보유 기업에 집중. 장비주보다는 첨단 패키징 관련주 비중 확대 권고.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stocks" class="tab-content">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">관련주 섹터별 스크리닝 보드</h1>
+                <p class="text-slate-600 text-lg">미·중 갈등 및 협력 어젠다와 직접적으로 연관된 국내 상장 종목 리스트입니다. 필터를 통해 원하는 섹터의 종목을 탐색하고 투자 전략을 수립하세요.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-slate-700">섹터 필터:</span>
+                        <select id="stock-filter" onchange="filterStocks()" class="bg-white border border-slate-300 text-slate-700 rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">전체 보기</option>
+                            <option value="반도체/AI">반도체 / AI</option>
+                            <option value="2차전지">2차전지 / EV</option>
+                            <option value="방위산업">방위산업</option>
+                            <option value="자동차">자동차</option>
+                            <option value="희림/광물">희토류 / 핵심광물</option>
+                        </select>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="stock-search" onkeyup="searchStocks()" placeholder="종목명 또는 코드 검색..." class="w-full bg-white border border-slate-300 text-slate-700 rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 pl-8">
+                        <span class="absolute left-2 top-1.5 text-slate-400">&#128269;</span>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto custom-scrollbar" style="max-height: 600px;">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-100 sticky top-0">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">종목명 (코드)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">섹터</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">G2 회담 연관성 (수혜/피해)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">핵심 투자 포인트</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-table-body" class="bg-white divide-y divide-slate-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const state = {
+            currentTab: 'overview',
+            currentSector: 'semi'
+        };
+
+        const sectorData = {
+            semi: {
+                title: "반도체 / AI 섹터 전망",
+                momentum: "미국의 대중국 AI 칩 수출 통제로 인해 중국 기업들의 레거시 메모리 사재기 수요 증가. 장기적으로는 HBM 등 고부가 가치 메모리 시장에서 한국 기업의 독점적 지위 강화 예상.",
+                risk: "미국 정부의 VEU(검증된 최종 사용자) 연장 여부에 따른 중국 내 공장(시안, 우시 등) 장비 반입 불확실성. 미중 디커플링 심화 시 글로벌 IT 수요 위축 가능성.",
+                strategy: "중국 매출 비중이 높으나 대체 불가능한 HBM 밸류체인 보유 기업에 집중. 팹리스 및 첨단 패키징(OSAT) 관련주 비중 확대 권고.",
+                chartData: [15, 25, -5, 10, 30],
+                chartLabels: ['레거시 메모리', 'HBM/AI', '중국팹 운영', '파운드리', '첨단패키징'],
+                color: '#4f46e5'
+            },
+            battery: {
+                title: "2차전지 / EV 섹터 전망",
+                momentum: "미국 IRA 법안에 따른 FEOC(해외우려집단) 규정 구체화로 중국산 배터리 및 소재의 북미 시장 진입 차단. 이에 따른 한국 셀 메이커 및 양극재 기업의 중장기 수주 잔고 증가.",
+                risk: "광물(리튬, 니켈, 흑연 등)의 높은 중국 의존도. 중국의 흑연 수출 통제 등 자원 무기화 시 단기적인 원가 상승 및 공급망 차질 우려.",
+                strategy: "북미 현지화 율이 높고 탈중국 공급망(호주, 남미 등) 확보를 선제적으로 진행한 소재 기업 차별화 접근. 전고체 등 차세대 배터리 기술 보유 기업 주목.",
+                chartData: [35, 20, -15, 10, 25],
+                chartLabels: ['북미점유율', '유럽수출', '광물조달비용', 'LFP경쟁력', '차세대기술'],
+                color: '#10b981'
+            },
+            defense: {
+                title: "방위산업 섹터 전망",
+                momentum: "미중 패권 경쟁 심화 및 대만 해협 등 지정학적 긴장 고조로 글로벌 자주국방 기조 확산. 미국 동맹국(나토, 중동, 아태)을 중심으로 한 한국산 무기체계(가성비+납기) 수출 호조 지속.",
+                risk: "원자재 가격 변동성 및 부품 조달망 이슈. 방산 수출 금융 지원 한도 등 정책적 병목 현상 발생 가능성.",
+                strategy: "수출 파이프라인이 다변화되어 있고, 미국 방산 기업과의 조인트 벤처 및 공급망 편입이 기대되는 체계 종합 및 항공우주 부품 기업 선호.",
+                chartData: [40, 30, 25, -5, 15],
+                chartLabels: ['유럽수출', '미주진출', '중동수출', '원자재리스크', '우주항공'],
+                color: '#f43f5e'
+            },
+            auto: {
+                title: "자동차 섹터 전망",
+                momentum: "중국 EV 업체의 북미 및 유럽 시장 진입 견제 반사이익. 하이브리드(HEV) 차량의 견조한 수요 바탕으로 북미 시장 점유율 방어 및 현지 생산 인프라(HMGMA) 가동 기대.",
+                risk: "중국 내수 시장에서의 점유율 지속 하락. 글로벌 수요 둔화 시 경쟁 심화에 따른 인센티브(마케팅 비용) 증가 우려.",
+                strategy: "완성차 업체는 밸류업 프로그램 및 주주환원 정책 기반의 배당주 관점 접근. 부품주는 북미 및 인디아 현지 동반 진출 기업 중심 트레이딩.",
+                chartData: [20, -20, 15, 5, 10],
+                chartLabels: ['북미EV/HEV', '중국내수', '신흥국수출', '공급망안정', '자율주행'],
+                color: '#f59e0b'
+            }
+        };
+
+        const stocksList = [
+            { name: "삼성전자", code: "005930", sector: "반도체/AI", impact: "중립/수혜", desc: "HBM 수요 증가 수혜, 단 중국 시안 공장 불확실성 상존." },
+            { name: "SK하이닉스", code: "000660", sector: "반도체/AI", impact: "강한 수혜", desc: "엔비디아향 HBM 독점적 지위로 미 AI 투자 확대의 최대 수혜주." },
+            { name: "한미반도체", code: "042700", sector: "반도체/AI", impact: "수혜", desc: "HBM 제조용 TC본더 글로벌 1위, 공급망 재편에 따른 장비 수요 증가." },
+            { name: "LG에너지솔루션", code: "373220", sector: "2차전지", impact: "수혜", desc: "북미 IRA 보조금 최대 수혜 예상, 탈중국 밸류체인 구축 속도." },
+            { name: "포스코홀딩스", code: "005490", sector: "2차전지", impact: "수혜", desc: "리튬/니켈 등 핵심 광물 내재화로 중국 자원 무기화 리스크 헤지 가능." },
+            { name: "에코프로비엠", code: "247540", sector: "2차전지", impact: "중립", desc: "양극재 수출 호조이나 전구체/리튬 중국 의존도 탈피 속도가 관건." },
+            { name: "한화에어로스페이스", code: "012450", sector: "방위산업", impact: "강한 수혜", desc: "지정학적 리스크 확대로 자주포 등 지상무기체계 글로벌 수주 잔고 급증." },
+            { name: "LIG넥스원", code: "079550", sector: "방위산업", impact: "수혜", desc: "중동 발 요격 미사일 수요 증가, 미중 갈등에 따른 방공망 강화 트렌드 부합." },
+            { name: "현대로템", code: "064350", sector: "방위산업", impact: "수혜", desc: "K2 전차 폴란드 등 유럽 수출 가속화, 방산 부문 턴어라운드 지속." },
+            { name: "현대차", code: "005380", sector: "자동차", impact: "중립", desc: "미중 갈등 반사이익으로 북미 점유율 확대, 단 피크아웃 우려 혼재." },
+            { name: "기아", code: "000270", sector: "자동차", impact: "중립", desc: "고수익 SUV 및 하이브리드 중심의 믹스 개선, 글로벌 점유율 방어." },
+            { name: "동국알앤에스", code: "067160", sector: "희림/광물", impact: "수혜(단기)", desc: "중국의 희토류 수출 통제 시 대체 소재 관련 테마적 움직임 부각." },
+            { name: "유니온머티리얼", code: "047400", sector: "희림/광물", impact: "수혜(단기)", desc: "페라이트 마그네트 생산, 중국 희토류 무기화 시 대체재로 시장 관심 증대." }
+        ];
+
+        let overviewChartInstance = null;
+        let sectorBarChartInstance = null;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.id.includes('mobile')) {
+                    btn.classList.replace('bg-slate-700', 'text-slate-300');
+                    btn.classList.replace('text-white', 'text-slate-300');
+                } else {
+                    btn.classList.replace('bg-slate-800', 'text-slate-300');
+                    btn.classList.replace('text-white', 'text-slate-300');
+                    btn.classList.remove('bg-slate-800', 'hover:bg-slate-700');
+                }
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            const activeMobileBtn = document.getElementById(`nav-mobile-${tabId}`);
+            
+            if(activeBtn) {
+                activeBtn.classList.add('bg-slate-800', 'text-white');
+                activeBtn.classList.remove('text-slate-300');
+            }
+            if(activeMobileBtn) {
+                activeMobileBtn.classList.add('bg-slate-700', 'text-white');
+                activeMobileBtn.classList.remove('text-slate-300');
+            }
+
+            if(tabId === 'overview' && !overviewChartInstance) initOverviewChart();
+            if(tabId === 'sectors' && !sectorBarChartInstance) loadSectorData('semi');
+        }
+
+        function initOverviewChart() {
+            const ctx = document.getElementById('overviewRadarChart').getContext('2d');
+            overviewChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['반도체 수출 통제', 'IRA 보조금 정책', '핵심광물 무기화', '대만해협 긴장', '중국 내수 부양', '동맹국 연대 압박'],
+                    datasets: [{
+                        label: '한국 증시 기회 지수',
+                        data: [80, 90, 30, 85, 40, 70],
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 2
+                    }, {
+                        label: '한국 증시 위협 지수',
+                        data: [60, 40, 90, 75, 50, 80],
+                        backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                        borderColor: 'rgba(244, 63, 94, 1)',
+                        pointBackgroundColor: 'rgba(244, 63, 94, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0,0,0,0.1)' },
+                            grid: { color: 'rgba(0,0,0,0.1)' },
+                            pointLabels: {
+                                font: { size: 12, family: "'Pretendard', sans-serif" },
+                                color: '#475569'
+                            },
+                            ticks: { display: false, min: 0, max: 100 }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: "'Pretendard', sans-serif" } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.formattedValue + '점';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadSectorData(sectorKey) {
+            document.querySelectorAll('.sector-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
+                btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-300');
+                if(btn.dataset.sector === sectorKey) {
+                    btn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-300');
+                    btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
+                }
+            });
+
+            const data = sectorData[sectorKey];
+            document.getElementById('detail-title').innerText = data.title;
+            document.getElementById('detail-momentum').innerText = data.momentum;
+            document.getElementById('detail-risk').innerText = data.risk;
+            document.getElementById('detail-strategy').innerText = data.strategy;
+
+            updateBarChart(data);
+        }
+
+        function updateBarChart(data) {
+            const ctx = document.getElementById('sectorBarChart').getContext('2d');
+            
+            if(sectorBarChartInstance) {
+                sectorBarChartInstance.destroy();
+            }
+
+            sectorBarChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.chartLabels,
+                    datasets: [{
+                        label: '예상 실적 임팩트 (%)',
+                        data: data.chartData,
+                        backgroundColor: data.chartData.map(val => val > 0 ? data.color : '#ef4444'),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [2, 4], color: '#e2e8f0' },
+                            ticks: { callback: function(value) { return value + "%"; } }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) { label += context.parsed.y + '%'; }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderStockTable(stocks) {
+            const tbody = document.getElementById('stock-table-body');
+            tbody.innerHTML = '';
+            
+            stocks.forEach(stock => {
+                let impactColor = 'text-slate-600';
+                let impactBg = 'bg-slate-100';
+                if(stock.impact.includes('강한 수혜')) {
+                    impactColor = 'text-indigo-700'; impactBg = 'bg-indigo-100';
+                } else if(stock.impact.includes('수혜')) {
+                    impactColor = 'text-emerald-700'; impactBg = 'bg-emerald-100';
+                } else if(stock.impact.includes('피해')) {
+                    impactColor = 'text-rose-700'; impactBg = 'bg-rose-100';
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-bold text-slate-800">${stock.name}</div>
+                        <div class="text-xs text-slate-500">${stock.code}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                            ${stock.sector}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-bold rounded ${impactBg} ${impactColor}">
+                            ${stock.impact}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600 max-w-md truncate hover:whitespace-normal hover:break-words cursor-pointer" title="${stock.desc}">
+                        ${stock.desc}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterStocks() {
+            const sectorFilter = document.getElementById('stock-filter').value;
+            const searchFilter = document.getElementById('stock-search').value.toLowerCase();
+            
+            const filtered = stocksList.filter(stock => {
+                const matchSector = sectorFilter === 'all' || stock.sector === sectorFilter;
+                const matchSearch = stock.name.toLowerCase().includes(searchFilter) || stock.code.includes(searchFilter);
+                return matchSector && matchSearch;
+            });
+            
+            renderStockTable(filtered);
+        }
+
+        function searchStocks() {
+            filterStocks();
+        }
+
+        window.onload = () => {
+            initOverviewChart();
+            renderStockTable(stocksList);
+        };
+    </script>
+</body>
+</html>
